@@ -1,0 +1,12 @@
+[project]
+name = "visa-bot"
+language = "python"
+
+[build]
+command = "pip install --upgrade pip && pip install -r requirements.txt && python -m playwright install chromium"
+
+[start]
+command = "python bot.py"
+
+[env]
+PYTHONUNBUFFERED = "1"
