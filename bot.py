@@ -25,8 +25,12 @@ def is_slot_available(page_text: str) -> bool:
     return any(marker in lower_text for marker in AVAILABLE_MARKERS)
 
 
-def check_embassy_page(page):
-    page.goto(TARGET_URL, timeout=60000, wait_until="networkidle")
+def check_embassy_page(page, first_load=False) -> bool:
+    if first_load:
+        page.goto(TARGET_URL, timeout=60000, wait_until="networkidle")
+    else:
+        page.reload(timeout=60000, wait_until="networkidle")
+
     page.wait_for_load_state("networkidle", timeout=60000)
     page.wait_for_selector("body", timeout=60000)
     body_text = page.inner_text("body")
@@ -42,17 +46,22 @@ def main():
             args=[
                 "--no-sandbox",
                 "--disable-setuid-sandbox",
+                "--disable-blink-features=AutomationControlled",
             ],
         )
+
         context = browser.new_context(
             user_agent=(
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                 "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/120.0.0.0 Safari/537.36"
+                "Chrome/126.0.0.0 Safari/537.36"
             ),
             viewport={"width": 1280, "height": 800},
             locale="en-US",
+            java_script_enabled=True,
+            ignore_https_errors=True,
         )
+
         page = context.new_page()
         page.add_init_script(
             "Object.defineProperty(navigator, 'webdriver', {get: () => false});"
@@ -64,10 +73,12 @@ def main():
             "Object.defineProperty(navigator, 'plugins', {get: () => [1, 2, 3, 4, 5]});"
         )
 
+        first_load = True
         while True:
             print("Checking Austria Embassy...")
             try:
-                available = check_embassy_page(page)
+                available = check_embassy_page(page, first_load=first_load)
+                first_load = False
                 if available:
                     print("✅ Available slots detected on Austria Embassy page.")
                 else:
